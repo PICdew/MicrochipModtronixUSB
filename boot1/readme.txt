@@ -1,4 +1,4 @@
-Release Notes for PICDEM(TM) FS USB Starter Kit,
+Release Notes for PICDEM(TM) FS USB Starter Kit, 
 Microchip Technology Inc.
 
 19 November 2004
