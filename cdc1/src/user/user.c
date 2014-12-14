@@ -98,86 +98,47 @@ void sendToLED(uint8 red, uint8 green, uint8 blue)
 void ProcessIO(void)
 {
 
-   #define NUM_OF_LEDS 26
+   #define NUM_OF_LEDS 25
 
     static uint8 state = 0;
+    const uint8 maxState = NUM_OF_LEDS;
     uint8 i;
     uint8 j;
-    uint8 n;
     uint8 r;
     uint8 g;
     uint8 b = 0;
     uint8 red[30];
     uint8 green[30];
     uint8 blue[30];
+    uint8 addr = 1;
+    char msg[20];
 
-    red[0] = 0;   green[0] = 0; blue[0] = 0;
-    red[1] = 100; green[1] = 0; blue[1] = 0;
-    red[2] = 0;   green[2] = 100; blue[2] = 0;
-    red[3] = 100; green[3] = 0; blue[3] = 0;
-    red[4] = 0;   green[4] = 100; blue[4] = 0;
-    red[5] = 100; green[5] = 0; blue[5] = 0;
-    red[6] = 0;   green[6] = 100; blue[6] = 0;
-    red[7] = 100; green[7] = 0; blue[7] = 0;
-    red[8] = 0;   green[8] = 100; blue[8] = 0;
-    red[9] = 100; green[9] = 0; blue[9] = 0;
-    red[10] = 000; green[10] = 100; blue[10] = 000;
-    red[11] = 100; green[11] = 000; blue[11] = 000;
-    red[12] = 000; green[12] = 100; blue[12] = 000;
-    red[13] = 100; green[13] = 000; blue[13] = 000;
-    red[14] = 000; green[14] = 100; blue[14] = 000;
-    red[15] = 100; green[15] = 000; blue[15] = 000;
-    red[16] = 000; green[16] = 100; blue[16] = 000;
-    red[17] = 100; green[17] = 000; blue[17] = 000;
-    red[18] = 000; green[18] = 100; blue[18] = 000;
-    red[19] = 100; green[19] = 000; blue[19] = 000;
-    red[20] = 000; green[20] = 100; blue[20] = 000;
-    red[21] = 100; green[21] = 000; blue[21] = 000;
-    red[22] = 000; green[22] = 100; blue[22] = 000;
-    red[23] = 100; green[23] = 000; blue[23] = 000;
-    red[24] = 000; green[24] = 100; blue[24] = 000;
-    red[25] = 100; green[25] = 000; blue[25] = 000;
-    red[26] = 000; green[26] = 100; blue[26] = 000;
-    red[27] = 100; green[27] = 000; blue[27] = 000;
-    red[28] = 000; green[28] = 100; blue[28] = 000;
-    red[29] = 100; green[29] = 000; blue[29] = 000;
-    
-    n = 0;
     LED_DATA_PIN = 0;
     LED_CLOCK_PIN = 0;
-
     delay_ms(200);
-    /*
-    for (i=0; i<30; i++)
-    {
-       red[i] = 0; green[i] = 0; blue[i] = 255;
-    }
-    */
-    /*
 
-
-    if (state == 0)
+    for (i=0;i<NUM_OF_LEDS;i++)
     {
-        for (j=1; j<=NUM_OF_LEDS; j++)
-        {
-           r = red[j]; g = green[j]; b = blue[j];
-           sendToLED(r,g,b);
-         }
+        red[i] = eeprom_read_byte(addr++);
+        green[i] = eeprom_read_byte(addr++);
+        blue[i] = eeprom_read_byte(addr++);
     }
-    if (state == 1)
-    {
-        for (j=1; j<=NUM_OF_LEDS; j++)
-        {
-           r = red[j+1]; g = green[j+1]; b = blue[j+1];
-           sendToLED(r,g,b);
+     //if(mUSBUSARTIsTxTrfReady())
+     //{
+     //    sprintf(msg, "read <%u><%u><%u> \r\n\0",red[0],green[0],blue[0]);
+     //    putsUSBUSART(msg);
+     //}
+     for (j=0; j<NUM_OF_LEDS; j++)
+     {
+         i = (j+state) % NUM_OF_LEDS;
+         r = red[i]; g = green[i]; b = blue[i];
+         sendToLED(r,g,b);
+     }
+     delay_ms(200);
 
-        }
-    }
     state++;
-    if (state>1)
+    if (state>maxState)
         state = 0;
-*/
-
 }
 
 /**
@@ -229,7 +190,9 @@ void Example2(void)
             //Write "Received: ", followed by data received, to virtual serial port
             if(mUSBUSARTIsTxTrfReady())
             {
-                
+                //putrsUSBUSART(msg);//for pgm memory (rom) only
+
+                /*
                 output_buffer[0] = '\r';
                 output_buffer[1] = 'R';
                 output_buffer[2] = 'e';
@@ -245,8 +208,8 @@ void Example2(void)
                 output_buffer[12] = '\r';
                 output_buffer[13] = '\n';
                 output_buffer[14] = '\0';
-                //putsUSBUSART(output_buffer);
-                
+                putsUSBUSART(output_buffer);
+                */
                 /*
                  * sprintf gives a warning 2066  type qualifier mismatch in assignment
                  * which the manual describes as:
@@ -264,20 +227,15 @@ void Example2(void)
                 //sprintf(msg, "got a <%c> \r\n\0",input_buffer[0]);
                 //putsUSBUSART(msg);
 
-
                // eeprom_write_byte(2,42);
                // foo = eeprom_read_byte(2);
                // sprintf(msg, "read <%u> \r\n\0",foo);
                // putsUSBUSART(msg);
 
-           //    sprintf(msg, "ABC123\r\n");
-           //    eeprom_write_block(msg, 4, strlen(msg));
-
-              // char* eeprom_read_string(char* s, unsigned char addr);
-           //    eeprom_read_string(msg2, 4);
-           //    putsUSBUSART(msg2);
-
-               //putrsUSBUSART(msg);//for pgm memory (rom) only
+               // sprintf(msg, "ABC123\r\n");
+               // eeprom_write_block(msg, 4, strlen(msg));
+               // eeprom_read_string(msg2, 4);
+               // putsUSBUSART(msg2);
 
                 //Back to wait for input state
                 smEx2State = EX2_WAIT_FOR_INPUT;
