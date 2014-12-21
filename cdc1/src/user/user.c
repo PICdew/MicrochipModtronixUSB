@@ -97,19 +97,20 @@ void sendToLED(uint8 red, uint8 green, uint8 blue)
  *****************************************************************************/
 void ProcessIO(void)
 {
+   #define NUM_OF_LEDS 50
+   #define SIZE_OF_ARRAY 25
 
-   #define NUM_OF_LEDS 25
-
-    static uint8 state = 0;
     const uint8 maxState = NUM_OF_LEDS;
+    static signed int state = NUM_OF_LEDS;
     uint8 i;
     uint8 j;
+    uint8 n;
     uint8 r;
     uint8 g;
     uint8 b = 0;
-    uint8 red[30];
-    uint8 green[30];
-    uint8 blue[30];
+    uint8 red[SIZE_OF_ARRAY];
+    uint8 green[SIZE_OF_ARRAY];
+    uint8 blue[SIZE_OF_ARRAY];
     uint8 addr = 1;
     char msg[20];
 
@@ -117,28 +118,24 @@ void ProcessIO(void)
     LED_CLOCK_PIN = 0;
     delay_ms(200);
 
-    for (i=0;i<NUM_OF_LEDS;i++)
+    for (i=0;i<SIZE_OF_ARRAY;i++)
     {
         red[i] = eeprom_read_byte(addr++);
         green[i] = eeprom_read_byte(addr++);
         blue[i] = eeprom_read_byte(addr++);
     }
-     //if(mUSBUSARTIsTxTrfReady())
-     //{
-     //    sprintf(msg, "read <%u><%u><%u> \r\n\0",red[0],green[0],blue[0]);
-     //    putsUSBUSART(msg);
-     //}
-     for (j=0; j<NUM_OF_LEDS; j++)
-     {
-         i = (j+state) % NUM_OF_LEDS;
+
+    for (j=0; j<NUM_OF_LEDS; j++)
+    {
+         i = (j+state) % SIZE_OF_ARRAY;
          r = red[i]; g = green[i]; b = blue[i];
          sendToLED(r,g,b);
-     }
-     delay_ms(200);
+    }
+    delay_ms(200);
 
-    state++;
-    if (state>maxState)
-        state = 0;
+    state--;
+    if (state<0)
+        state = maxState;
 }
 
 /**
