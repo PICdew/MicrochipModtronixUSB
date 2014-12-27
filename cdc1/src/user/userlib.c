@@ -1,22 +1,33 @@
 
-
-
+/*********************************************************************
+ *
+ *     libraries for use with the Microchip USB C18 Firmware
+ *
+ *********************************************************************
+ * FileName:        userlib.c
+ * Dependencies:    See INCLUDES section below
+ * Processor:       PIC18
+ * Compiler:        Microchip C18 2.30.01+
+ * Author:          Jeanne Pindar.
+ ********************************************************************/
 
 /* must have C:\Program Files (x86)\Microchip\mplabc18\v3.46\h\ in the include path*/
 #include <p18cxxx.h>
-//#include <usart.h>
+#include <usart.h>
 #include <stdio.h>
 #include <string.h>
 #include <delays.h>
 #include "system\typedefs.h"
-//#include "system\usb\usb.h"
-//#include "io_cfg.h"             // I/O pin mapping
+#include "system\usb\usb.h"
+#include "io_cfg.h"             // I/O pin mapping
 #include "projdefs.h"
 #include "mxmc18\tick.h"    // Modtronix library
 #include "user\userlib.h"
 
 #define FOSC 20000000
-
+#pragma udata
+char input_buffer[64];
+char output_buffer[64];
 
 #pragma code
 void InitializeUSART(void)
@@ -138,5 +149,101 @@ void eeprom_read_string(char* s, unsigned int addr)
    //*ptr = 0x00;
    s = b;
   // return s;
+}
+
+void doAtIntervals(void)
+{
+    static uint16 tmr1sec = 0;
+
+    //Enter every 60ms
+    if (tick16GetDiff(tmr1sec) > 1000) {
+        tmr1sec += 1000;
+
+        if(mUSBUSARTIsTxTrfReady())
+        {
+            putrsUSBUSART("\rHello World\r\n");
+        }
+    }
+}
+
+void ioStateMachine(void)
+{
+    static byte bytesRead;
+    char msg[20];
+    char msg2[20];
+    char foo;
+
+    static byte smEx2State = 0;
+    // State Machine states
+    typedef enum SM_CMD
+    {
+        EX2_WAIT_FOR_INPUT,     // Wait for input from user via virtual serial port
+        EX2_WAIT_TX_READY       // Wait for driver ready to accept a new string to write to the USB
+    } SM_CMD;
+
+    switch (smEx2State) {
+        case EX2_WAIT_FOR_INPUT:
+            //Check if any data was received via the virtual serial port
+            if(bytesRead = getsUSBUSART(input_buffer, 8)) {
+                smEx2State = EX2_WAIT_TX_READY;
+            }
+        break;
+        case EX2_WAIT_TX_READY:
+            //Write "Received: ", followed by data received, to virtual serial port
+            if(mUSBUSARTIsTxTrfReady())
+            {
+                //putrsUSBUSART(msg);//for pgm memory (rom) only
+
+                /*
+                output_buffer[0] = '\r';
+                output_buffer[1] = 'R';
+                output_buffer[2] = 'e';
+                output_buffer[3] = 'c';
+                output_buffer[4] = 'e';
+                output_buffer[5] = 'i';
+                output_buffer[6] = 'v';
+                output_buffer[7] = 'e';
+                output_buffer[8] = 'd';
+                output_buffer[9] = ':';
+                output_buffer[10] = ' ';
+                output_buffer[11] = input_buffer[0];
+                output_buffer[12] = '\r';
+                output_buffer[13] = '\n';
+                output_buffer[14] = '\0';
+                putsUSBUSART(output_buffer);
+                */
+                /*
+                 * sprintf gives a warning 2066  type qualifier mismatch in assignment
+                 * which the manual describes as:
+                 * Pointer assignment where the source and destination pointers point to
+                 * objects of compatible type, but the source pointer points to an object which
+                 * is const or volatile qualified and the destination pointer does not.
+                 *
+                 * Well, yeah.
+                 */
+
+                //output_buffer is in udata, this works
+                //sprintf(output_buffer, "got a <%c> \r\n\0",input_buffer[0]);
+                //putsUSBUSART(output_buffer);
+
+                //this works if msg is a local variable
+                //sprintf(msg, "got a <%c> \r\n\0",input_buffer[0]);
+                //putsUSBUSART(msg);
+
+               // eeprom_write_byte(2,42);
+               // foo = eeprom_read_byte(2);
+               // sprintf(msg, "read <%u> \r\n\0",foo);
+               // putsUSBUSART(msg);
+
+               // sprintf(msg, "ABC123\r\n");
+               // eeprom_write_block(msg, 4, strlen(msg));
+               // eeprom_read_string(msg2, 4);
+               // putsUSBUSART(msg2);
+
+                //Back to wait for input state
+                smEx2State = EX2_WAIT_FOR_INPUT;
+            }
+        break;
+    }
 }
 
